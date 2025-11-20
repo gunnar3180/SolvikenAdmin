@@ -9,9 +9,9 @@ using Microsoft.Playwright;
 
 namespace StyreWebAutomation
 {
-    internal static class PlayWrightRunner
+    public static class PlayWrightRunner
     {
-        static void InstallPlaywright()
+        public static void InstallPlaywright()
         {
             Program.Main(new[] { "install" });
         }
@@ -53,7 +53,7 @@ namespace StyreWebAutomation
             await browser.DisposeAsync();
         }
 
-        static async Task VisRapportOgLastNed(IPage page, string savePath, Action<string> log)
+        private static async Task VisRapportOgLastNed(IPage page, string savePath, Action<string> log)
         {
             log("Genererer rapport...");
             var newPageTask = page.Context.WaitForPageAsync();
@@ -71,7 +71,7 @@ namespace StyreWebAutomation
             await newTab.CloseAsync();
         }
 
-        static string DecodeString(string coded)
+        private static string DecodeString(string coded)
         {
             string alfaNum = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789abcdefghijklmnopqrstuvwxyz";
             int maxPos = alfaNum.Length - 1;

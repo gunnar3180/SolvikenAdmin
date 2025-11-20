@@ -1,10 +1,13 @@
-﻿namespace SolvikenAdmin
+﻿using StyreWebAutomation;
+
+namespace SolvikenAdmin
 {
     internal class Program
     {
         static void Main(string[] args)
         {
-            Console.WriteLine("Hello, World!");
+            // PlayWrightRunner.InstallPlaywright();
+            PlayWrightRunner.Go(log: Console.Write).GetAwaiter().GetResult();
         }
     }
 }
