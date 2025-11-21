@@ -7,7 +7,11 @@ namespace SolvikenAdmin
         static void Main(string[] args)
         {
             // PlayWrightRunner.InstallPlaywright();
-            PlayWrightRunner.Go(log: Console.Write).GetAwaiter().GetResult();
+
+            PlayWrightRunner.Init(Console.Write).GetAwaiter().GetResult();
+            PlayWrightRunner.LogOnStyreWeb().GetAwaiter().GetResult();
+            PlayWrightRunner.DownLoadReports().GetAwaiter().GetResult();
+            PlayWrightRunner.LogOffStyreWeb().GetAwaiter().GetResult();
         }
     }
 }

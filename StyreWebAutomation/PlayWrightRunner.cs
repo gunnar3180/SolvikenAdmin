@@ -4,7 +4,10 @@ namespace StyreWebAutomation
 {
     public static class PlayWrightRunner
     {
+        private static IPlaywright _playwright;
+        private static IBrowser _browser;
         private static IPage _page;
+
         private static readonly string _brukerNavn = "gb3180@online.no";
         private static readonly string _kodetPassord = "Cf77D57G1vfiv1S";
         private static readonly string _loginUrl = "https://portal.styreweb.com/account/login.aspx";
@@ -20,34 +23,37 @@ namespace StyreWebAutomation
             Program.Main(new[] { "install" });
         }
 
-        public static async Task Go(Action<string> log)
+        public static async Task Init(Action<string> log)
         {
             _log = log;
 
-            using var playwright = await Playwright.CreateAsync();
-            var browser = await playwright.Chromium.LaunchAsync();
-            _page = await browser.NewPageAsync();
-
-            log("Logger inn på StyreWeb...");
+            _playwright = await Playwright.CreateAsync();
+            _browser = await _playwright.Chromium.LaunchAsync();
+            _page = await _browser.NewPageAsync();
+        }
+        public static async Task LogOnStyreWeb()
+        {
+            _log("Logger inn på StyreWeb...");
             await _page.GotoAsync(_loginUrl);
             await _page.GetByLabel("Brukernavn").FillAsync(_brukerNavn);
             await _page.GetByLabel("Passord").FillAsync(DecodeString(_kodetPassord));
             await _page.GetByRole(AriaRole.Button).ClickAsync();
             await _page.WaitForURLAsync(_hjemUrl);
-            log("OK\n");
+            _log("OK\n");
 
-            // Do the job
+            //await _page.ScreenshotAsync(new PageScreenshotOptions { Path = @"C:\MyLocal\Solviken\screenshot.png" });
+        }
+
+        public static async Task LogOffStyreWeb()
+        {
+            await _browser.DisposeAsync();
+        }
+
+        public static async Task DownLoadReports()
+        {
             await DownloadMarina();
             await DownloadFramleie();
             await DownloadMedlemmer();
-
-            //await EndrePlassVerdier("5V16", 
-            //[
-            //    ("Innskudd", "16451")
-            //]);
-
-            //await _page.ScreenshotAsync(new PageScreenshotOptions { Path = @"C:\MyLocal\Solviken\screenshot.png" });
-            await browser.DisposeAsync();
         }
 
         static async Task DownloadMarina()
