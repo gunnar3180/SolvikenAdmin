@@ -1,16 +1,20 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
-using System.Xml;
-
-using Microsoft.Playwright;
+﻿using Microsoft.Playwright;
 
 namespace StyreWebAutomation
 {
     public static class PlayWrightRunner
     {
+        private static IPage _page;
+        private static readonly string _brukerNavn = "gb3180@online.no";
+        private static readonly string _kodetPassord = "Cf77D57G1vfiv1S";
+        private static readonly string _loginUrl = "https://portal.styreweb.com/account/login.aspx";
+        private static readonly string _hjemUrl = "https://solvikenbatforening.portal.styreweb.com/secure/";
+        private static readonly string _marinaUrl = _hjemUrl + "archive/marina.aspx";
+        private static readonly string _framleieUrl = _hjemUrl + "archive/marinasublet.aspx";
+        private static readonly string _medlemmerUrl = _hjemUrl + "Members.aspx";
+        private static readonly string _downloadFolder = $@"C:\Users\{Environment.UserName}\Downloads";
+        private static Action<string> _log;
+
         public static void InstallPlaywright()
         {
             Program.Main(new[] { "install" });
@@ -18,57 +22,172 @@ namespace StyreWebAutomation
 
         public static async Task Go(Action<string> log)
         {
-            var brukerNavn = "gb3180@online.no";
-            var kodetPassord = "Cf77D57G1vfiv1S";
-            var loginUrl = "https://portal.styreweb.com/account/login.aspx";
-            var hjemUrl = "https://solvikenbatforening.portal.styreweb.com/secure/";
-            var marinaUrl = hjemUrl + "archive/marina.aspx";
-            var framleieUrl = hjemUrl + "archive/marinasublet.aspx";
-            var medlemmerUrl = hjemUrl + "Members.aspx";
-            var downloadFolder = @"C:\Users\gunnar\Downloads";
+            _log = log;
 
             using var playwright = await Playwright.CreateAsync();
             var browser = await playwright.Chromium.LaunchAsync();
-            var page = await browser.NewPageAsync();
-            await page.GotoAsync(loginUrl);
-            await page.GetByLabel("Brukernavn").FillAsync(brukerNavn);
-            await page.GetByLabel("Passord").FillAsync(DecodeString(kodetPassord));
-            await page.GetByRole(AriaRole.Button).ClickAsync();
-            await page.WaitForURLAsync(hjemUrl);
-            log("Logget inn på StyreWeb\n");
+            _page = await browser.NewPageAsync();
 
-            await page.GotoAsync(marinaUrl);
+            log("Logger inn på StyreWeb...");
+            await _page.GotoAsync(_loginUrl);
+            await _page.GetByLabel("Brukernavn").FillAsync(_brukerNavn);
+            await _page.GetByLabel("Passord").FillAsync(DecodeString(_kodetPassord));
+            await _page.GetByRole(AriaRole.Button).ClickAsync();
+            await _page.WaitForURLAsync(_hjemUrl);
+            log("OK\n");
 
-            await page.Locator("#cboAction").SelectOptionAsync(new SelectOptionValue { Label = "Marina - Detaljert" });
-            await VisRapportOgLastNed(page, Path.Combine(downloadFolder, "Marina_-_Detaljert.csv"), log);
+            // Do the job
+            await DownloadMarina();
+            await DownloadFramleie();
+            await DownloadMedlemmer();
 
-            await page.GotoAsync(framleieUrl);
-            await VisRapportOgLastNed(page, Path.Combine(downloadFolder, "Fremleie_historie.csv"), log);
+            //await EndrePlassVerdier("5V16", 
+            //[
+            //    ("Innskudd", "16451")
+            //]);
 
-            await page.GotoAsync(medlemmerUrl);
-            await page.Locator("#Main_cboAction").SelectOptionAsync(new SelectOptionValue { Label = "Detaljert Rapport" });
-            await VisRapportOgLastNed(page, Path.Combine(downloadFolder, "Detaljert_Rapport.csv"), log);
-
-            //await page.ScreenshotAsync(new PageScreenshotOptions { Path = @"C:\MyLocal\Solviken\screenshot.png" });
+            //await _page.ScreenshotAsync(new PageScreenshotOptions { Path = @"C:\MyLocal\Solviken\screenshot.png" });
             await browser.DisposeAsync();
         }
 
-        private static async Task VisRapportOgLastNed(IPage page, string savePath, Action<string> log)
+        static async Task DownloadMarina()
         {
-            log("Genererer rapport...");
-            var newPageTask = page.Context.WaitForPageAsync();
-            await page.ClickAsync("button:has-text(\"Vis\")");
+            await _page.GotoAsync(_marinaUrl);
+            await _page.Locator("#cboAction").SelectOptionAsync(new SelectOptionValue { Label = "Marina - Detaljert" });
+            await VisRapportOgLastNed(Path.Combine(_downloadFolder, "Marina_-_Detaljert.csv"));
+        }
+
+        static async Task DownloadFramleie()
+        {
+            await _page.GotoAsync(_framleieUrl);
+            await VisRapportOgLastNed(Path.Combine(_downloadFolder, "Fremleie_historie.csv"));
+        }
+
+        static async Task DownloadMedlemmer()
+        {
+            await _page.GotoAsync(_medlemmerUrl);
+            await _page.Locator("#Main_cboAction").SelectOptionAsync(new SelectOptionValue { Label = "Detaljert Rapport" });
+            await VisRapportOgLastNed(Path.Combine(_downloadFolder, "Detaljert_Rapport.csv"));
+        }
+
+        public static async Task EndrePlassVerdier(string plass, List<(string, string)> verdier)
+        {
+            await _page.GotoAsync(_marinaUrl);
+            var inputField = _page.Locator("#LeftNavBar_txtSerieNr");
+            await inputField.FillAsync(plass);
+            await _page.ClickAsync("button:has-text(\"Søk\")");
+
+            var tableLocator = _page.Locator("sw-panel#pnlMain table#Main_grdv");
+            try
+            {
+                await tableLocator.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Visible, Timeout = 5000 });
+            }
+            catch (Exception)
+            {
+                _log($"Fant ikke båtplass {plass}\n");
+                return;
+            }
+
+            //Console.WriteLine("Table with ID 'Main_grdv' exists inside <sw-panel>.");
+            await _page.Locator("a", new PageLocatorOptions { HasTextString = plass }).ClickAsync();
+
+            var endreButton = _page.Locator("input[type='button'][value='Endre']");
+            await endreButton.ClickAsync();
+
+            foreach (var verdi in verdier)
+            {
+                var verdiId = GetEditFieldId(verdi.Item1);
+                if (verdiId == null)
+                {
+                    _log($"{plass}: Fant ikke felt {verdi.Item1}\n");
+                    continue;
+                }
+
+                await _page.Locator($"#{verdiId}").FillAsync(verdi.Item2);
+                _log($"{plass}: {verdi.Item1} = {verdi.Item2}\n");
+            }
+
+            var lagreButton = _page.Locator("input[type='submit'][value='Lagre']");
+            await lagreButton.ClickAsync();
+        }
+
+        static string GetEditFieldId(string fieldName)
+        {
+            switch (fieldName)
+            {
+                case "Bredde":
+                    return "Main_details_txtUserDefFlt1";
+                case "Lengde":
+                    return "Main_details_txtUserDefFlt2";
+                case "Dybde":
+                    return "Main_details_txtUserDefFlt3";
+                case "Høyde":
+                    return "Main_details_txtUserDefFlt4";
+                case "Innskudd":
+                    return "Main_details_txtPrice";
+            }
+
+            return null;
+        }
+
+        private static async Task VisRapportOgLastNed(string savePath)
+        {
+            _log("Genererer rapport...");
+            var newPageTask = _page.Context.WaitForPageAsync();
+            await _page.ClickAsync("button:has-text(\"Vis\")");
             var newTab = await newPageTask;
             await newTab.WaitForLoadStateAsync(LoadState.DOMContentLoaded);
-            log("Ferdig...");
+            _log("Ferdig...");
 
-            log("Laster ned...");
+            _log("Laster ned...");
             var downloadTask = newTab.WaitForDownloadAsync();
             await newTab.ClickAsync("button:has-text(\"Eksporter som csv fil\")");
             var download = await downloadTask;
             await download.SaveAsAsync(savePath);
-            log(savePath + "\n");
+            _log(savePath + "\n");
             await newTab.CloseAsync();
+        }
+
+        // Brukt høst 25 for å opprette opplagsplasser på land. Kan brukes som mal for å opprette båtplasser også.
+        public static async Task LagOpplagsplass(IPage page, string marinaUrl, string felt, int nummer, Action<string> log)
+        {
+            await page.GotoAsync(marinaUrl);
+            await page.ClickAsync("button:has-text(\"Lag ny\")");
+
+            // Set inn seksjon
+            var seksjon = $"Land {felt}";
+            var dropdown = page.Locator("select[title='Seksjon']");
+            await dropdown.SelectOptionAsync(new SelectOptionValue { Label = seksjon });
+
+            var inputField = page.Locator("#Main_details_txtSortOrder");
+            await inputField.FillAsync(nummer.ToString());
+
+            inputField = page.Locator("#Main_details_txtGenericArchiveShortName");
+            await inputField.FillAsync($"{felt}{nummer.ToString("d2")}");
+
+            dropdown = page.Locator("select[title='Type']");
+            await dropdown.SelectOptionAsync(new SelectOptionValue { Label = "Landopplag" });
+
+            inputField = page.Locator("#Main_details_txtUserDefFlt1");
+            await inputField.FillAsync("5");
+
+            inputField = page.Locator("#Main_details_txtUserDefFlt2");
+            await inputField.FillAsync("10");
+
+            dropdown = page.Locator("select[title='Vare']");
+            await dropdown.SelectOptionAsync(new SelectOptionValue { Label = "Båtplass Avgift" });
+
+            var checkbox = page.Locator("#Main_details_ctl23");
+            await checkbox.CheckAsync();
+
+            checkbox = page.Locator("#Main_details_ctl24");
+            await checkbox.CheckAsync();
+
+            await page.GetByText("Opprett").ClickAsync();
+
+            await page.GetByText("<< Marina").ClickAsync();
+
+            log($"Opprettet opplagsplass {felt}{nummer.ToString("d2")} på felt {seksjon}\n");
         }
 
         private static string DecodeString(string coded)
