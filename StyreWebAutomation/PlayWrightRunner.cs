@@ -1,4 +1,5 @@
 ﻿using Microsoft.Playwright;
+using System.Reflection.Emit;
 
 namespace StyreWebAutomation
 {
@@ -40,12 +41,11 @@ namespace StyreWebAutomation
             await _page.GetByRole(AriaRole.Button).ClickAsync();
             await _page.WaitForURLAsync(_hjemUrl);
             _log("OK\n");
-
-            //await _page.ScreenshotAsync(new PageScreenshotOptions { Path = @"C:\MyLocal\Solviken\screenshot.png" });
         }
 
         public static async Task LogOffStyreWeb()
         {
+            await _page.ScreenshotAsync(new PageScreenshotOptions { Path = @"C:\MyLocal\Solviken\screenshot.png" });
             await _browser.DisposeAsync();
         }
 
@@ -76,7 +76,34 @@ namespace StyreWebAutomation
             await VisRapportOgLastNed(Path.Combine(_downloadFolder, "Detaljert_Rapport.csv"));
         }
 
-        public static async Task EndrePlassVerdier(string plass, List<(string, string)> verdier)
+        public static async Task EndrePlassVerdier(string plass, List<(string field, string value)> verdier)
+        {
+            if (!await FinnPlass(plass))
+            {
+                 return;
+            }
+
+            var endreButton = _page.Locator("input[type='button'][value='Endre']");
+            await endreButton.ClickAsync();
+
+            foreach (var verdi in verdier)
+            {
+                var verdiId = GetEditFieldId(verdi.field);
+                if (verdiId == null)
+                {
+                    _log($"{plass}: Fant ikke felt {verdi.field}\n");
+                    continue;
+                }
+
+                await _page.Locator($"#{verdiId}").FillAsync(verdi.value);
+                _log($"{plass}: {verdi.field} = {verdi.value}\n");
+            }
+
+            var lagreButton = _page.Locator("input[type='submit'][value='Lagre']");
+            await lagreButton.ClickAsync();
+        }
+
+        private static async Task<bool> FinnPlass(string plass)
         {
             await _page.GotoAsync(_marinaUrl);
             var inputField = _page.Locator("#LeftNavBar_txtSerieNr");
@@ -91,30 +118,43 @@ namespace StyreWebAutomation
             catch (Exception)
             {
                 _log($"Fant ikke båtplass {plass}\n");
-                return;
+                return false;
             }
 
             //Console.WriteLine("Table with ID 'Main_grdv' exists inside <sw-panel>.");
             await _page.Locator("a", new PageLocatorOptions { HasTextString = plass }).ClickAsync();
+            return true;
+        }
 
+        public static async Task SetVareVariant(string plass, string vareVariant)
+        {
+            if (!await FinnPlass(plass))
+            {
+                _log("Fant ikke plass " + plass + "\n");
+                return;
+            }
+
+            var tildelt = _page.Locator("td.GridView-MainNavigationCell a");
+            try
+            {
+                await tildelt.WaitForAsync(new LocatorWaitForOptions { State = WaitForSelectorState.Visible, Timeout = 5000 });
+            }
+            catch (Exception)
+            {
+                _log("Plass " + plass + " har ingen tildeling\n");
+                return;
+            }
+
+            await tildelt.First.ClickAsync();
             var endreButton = _page.Locator("input[type='button'][value='Endre']");
             await endreButton.ClickAsync();
 
-            foreach (var verdi in verdier)
-            {
-                var verdiId = GetEditFieldId(verdi.Item1);
-                if (verdiId == null)
-                {
-                    _log($"{plass}: Fant ikke felt {verdi.Item1}\n");
-                    continue;
-                }
-
-                await _page.Locator($"#{verdiId}").FillAsync(verdi.Item2);
-                _log($"{plass}: {verdi.Item1} = {verdi.Item2}\n");
-            }
+            await _page.Locator("#Main_detailGenericArchiveMember_cboProductVariant")
+                .SelectOptionAsync(new SelectOptionValue { Label = "Landopplag" });
 
             var lagreButton = _page.Locator("input[type='submit'][value='Lagre']");
             await lagreButton.ClickAsync();
+            _log($"Endret varevariant for plass {plass} til {vareVariant}\n");
         }
 
         static string GetEditFieldId(string fieldName)

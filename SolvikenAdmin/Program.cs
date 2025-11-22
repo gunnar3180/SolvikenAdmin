@@ -8,10 +8,23 @@ namespace SolvikenAdmin
         {
             // PlayWrightRunner.InstallPlaywright();
 
-            PlayWrightRunner.Init(Console.Write).GetAwaiter().GetResult();
-            PlayWrightRunner.LogOnStyreWeb().GetAwaiter().GetResult();
-            PlayWrightRunner.DownLoadReports().GetAwaiter().GetResult();
-            PlayWrightRunner.LogOffStyreWeb().GetAwaiter().GetResult();
+            DoTheJob().GetAwaiter().GetResult();
+        }
+
+        static async Task DoTheJob()
+        {
+            await PlayWrightRunner.Init(Console.Write);
+            await PlayWrightRunner.LogOnStyreWeb();
+
+            await PlayWrightRunner.DownLoadReports();
+
+            //for (int plassNr = 1; plassNr <= 11; plassNr++)
+            //{
+            //    string plass = $"D{plassNr:00}";
+            //    await PlayWrightRunner.SetVareVariant(plass, "Landopplag");
+            //}
+
+            await PlayWrightRunner.LogOffStyreWeb();
         }
     }
 }
