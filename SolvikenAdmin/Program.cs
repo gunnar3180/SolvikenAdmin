@@ -8,7 +8,9 @@ namespace SolvikenAdmin
         {
             // PlayWrightRunner.InstallPlaywright();
 
-            DoTheJob().GetAwaiter().GetResult();
+            //DoTheJob().GetAwaiter().GetResult();
+
+            InnskuddOverforing.Execute();
         }
 
         static async Task DoTheJob()
