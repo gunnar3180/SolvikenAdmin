@@ -9,38 +9,73 @@ namespace SolvikenAdmin
 {
     internal static class InnskuddOverforing
     {
-        internal static void Execute()
+        internal static IEnumerable<(string plassId, int innskudd)> FinnHwInnskudd()
         {
+            var innskuddListe = new List<(string plassId, int innskudd)>();
+
             var hwExport = new HavneWebExport().LesData();
             var swExport = new StyreWebExport().LesData();
             var hwAndelsplasser = hwExport.GetAndelsPlasser().ToDictionary(k => k.PlassId, v => v);
             var swAndelsplasser = swExport.GetAndelsPlasser();
             foreach (var swAndelsplass in swAndelsplasser)
             {
-                if (hwAndelsplasser.TryGetValue(swAndelsplass.PlassId, out var hwAndelsplass))
+                var hwPlassId = GetHwPlassId(swAndelsplass.PlassId);
+
+                if (!hwAndelsplasser.TryGetValue(hwPlassId, out var hwAndelsplass))
                 {
-                    if (hwAndelsplass.Eier == swAndelsplass.Eier && hwAndelsplass.Innskudd != 0)
-                    {
-                        if (hwAndelsplass.Innskudd != swAndelsplass.Innskudd)
-                        {
-                            Console.WriteLine($"   Oppdaterer plass {swAndelsplass.PlassId}: {swAndelsplass.Eier} innskudd fra {swAndelsplass.Innskudd} til {hwAndelsplass.Innskudd}");
-                            //swAndelsplass.Innskudd = hwAndelsplass.Innskudd;
-                            // Legg til i liste
-                        }
-                        else
-                        {
-                            Console.WriteLine($"   *Plass {swAndelsplass.PlassId} innskudd er allerede oppdatert"); 
-                        }
-                    }
-                    else
-                    {
-                        Console.WriteLine($"   *Plass {swAndelsplass.PlassId} har annen eier eller innskudd er 0 i HavneWebExport");
-                    }
+                    Console.WriteLine($"   *Plass {swAndelsplass.PlassId} var ikke andelsplass i HavneWeb");
+                    continue;
                 }
-                else
+
+                if (hwAndelsplass.Eier != swAndelsplass.Eier)
                 {
-                    Console.WriteLine($"   *Plass {swAndelsplass.PlassId} var ikke andelsplass i HavneWebExport");
+                    Console.WriteLine($"   **Plass {swAndelsplass.PlassId} har annen eier i HavneWeb");
+                    continue;
                 }
+
+                if (hwAndelsplass.Innskudd == 0)
+                {
+                    Console.WriteLine($"   ****Plass {swAndelsplass.PlassId}: {swAndelsplass.Eier} har 0 i innskudd i HavneWeb");
+                    continue;
+                }
+
+                if (swAndelsplass.Innskudd > 0)
+                {           
+                    Console.WriteLine($"   *****Plass {swAndelsplass.PlassId} har allerede innskudd i StyreWeb");
+                    continue;
+                }
+
+                if (hwAndelsplass.Innskudd == swAndelsplass.Innskudd)
+                {
+                    Console.WriteLine($"   ******Plass {swAndelsplass.PlassId} innskudd er allerede oppdatert");
+                    continue;
+                }
+
+                Console.WriteLine($"Oppdaterer plass {swAndelsplass.PlassId}: {swAndelsplass.Eier} innskudd til {hwAndelsplass.Innskudd}");
+                innskuddListe.Add((swAndelsplass.PlassId, hwAndelsplass.Innskudd));
+            }
+
+            return innskuddListe;
+        }
+
+        private static string GetHwPlassId(string swPlassId)
+        {
+            switch (swPlassId)
+            {
+                case "1H34": return "1H35";
+                case "1H35": return "1H36";
+                case "1H36": return "1H37";
+                case "1H37": return "1H38";
+                case "1H38": return "1H39";
+                case "1H39": return "1H40";
+                case "1H40": return "1H41";
+                case "1H41": return "1H42";
+                case "1H42": return "1H43";
+
+                case "2V14": return "2H14";
+                case "2H14": return "2V14";
+
+                default: return swPlassId;
             }
         }
     }

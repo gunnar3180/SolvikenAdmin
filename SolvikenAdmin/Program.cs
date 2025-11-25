@@ -10,7 +10,7 @@ namespace SolvikenAdmin
 
             //DoTheJob().GetAwaiter().GetResult();
 
-            InnskuddOverforing.Execute();
+            var innskudd2024 = InnskuddOverforing.FinnHwInnskudd();
         }
 
         static async Task DoTheJob()
