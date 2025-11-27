@@ -10,7 +10,7 @@ namespace SolvikenAdmin
 
             //DownloadSwReports().GetAwaiter().GetResult();
 
-            InnskuddOverforing.FinnSwAndelsplasserUtenInnskudd();
+            //InnskuddOverforing.FinnSwAndelsplasserUtenInnskudd();
 
             //var innskudd2024 = InnskuddOverforing.FinnHwInnskudd();
             //Console.WriteLine();
@@ -22,6 +22,18 @@ namespace SolvikenAdmin
 
             //KopierInnskuddTilSw(manuelleInnskudd).GetAwaiter().GetResult();
             //var manuelleInnskudd = GetManuelleInnskudd();
+
+            TestStromSettings().GetAwaiter().GetResult();
+        }
+
+        private static async Task TestStromSettings()
+        {
+            await PlayWrightRunner.Init(Console.Write);
+            await PlayWrightRunner.LogOnStyreWeb();
+
+            await PlayWrightRunner.EndrePlassVerdier("5V16", [("Strøm", "true"), ("Strømboks", "boksen min")]);
+
+            await PlayWrightRunner.LogOffStyreWeb();
         }
 
         private static IEnumerable<(string plassId, int innskudd)> GetManuelleInnskudd()

@@ -95,7 +95,20 @@ namespace StyreWebAutomation
                     continue;
                 }
 
-                await _page.Locator($"#{verdiId}").FillAsync(verdi.value);
+                var item = _page.Locator($"#{verdiId}");
+                if (verdi.value == "true")
+                {
+                    await item.CheckAsync();
+                }
+                else if (verdi.value == "false")
+                {
+                    await item.UncheckAsync();
+                }
+                else
+                {
+                    await _page.Locator($"#{verdiId}").FillAsync(verdi.value);
+                }
+
                 _log($"{plass}: {verdi.field} = {verdi.value}\n");
             }
 
@@ -172,6 +185,10 @@ namespace StyreWebAutomation
                     return "Main_details_txtUserDefFlt4";
                 case "Innskudd":
                     return "Main_details_txtPrice";
+                case "Strøm":
+                    return "Main_details_ctl16";
+                case "Strømboks":
+                    return "Main_details_txtUserDef1";
             }
 
             return null;
