@@ -58,6 +58,22 @@ namespace SolvikenAdmin
             return innskuddListe;
         }
 
+        public static IEnumerable<string> FinnSwAndelsplasserUtenInnskudd()
+        {
+            var swAndelsplasserUtenInnskudd = new StyreWebExport()
+                .LesData()
+                .GetAndelsPlasser()
+                .Where(p => p.Innskudd <= 0);
+
+            Console.WriteLine("Andelsplasser uten innskudd:");
+            foreach (var plass in swAndelsplasserUtenInnskudd)
+            {
+                Console.WriteLine($"{plass.PlassId}: {plass.Eier}");
+            }
+
+            return swAndelsplasserUtenInnskudd.Select(p => p.PlassId);
+        }
+
         private static string GetHwPlassId(string swPlassId)
         {
             switch (swPlassId)

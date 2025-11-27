@@ -122,9 +122,10 @@ namespace StyreWebAutomation
             }
 
             //Console.WriteLine("Table with ID 'Main_grdv' exists inside <sw-panel>.");
-            await _page.Locator("a", new PageLocatorOptions { HasTextString = plass }).ClickAsync();
+            await _page.Locator("a", new PageLocatorOptions { HasTextString = plass }).First.ClickAsync();
             return true;
         }
+
 
         public static async Task SetVareVariant(string plass, string vareVariant)
         {
