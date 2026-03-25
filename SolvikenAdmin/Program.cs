@@ -1,4 +1,4 @@
-﻿using StyreWebAutomation;
+﻿using PlayWrightRunner;
 
 namespace SolvikenAdmin
 {
@@ -28,12 +28,12 @@ namespace SolvikenAdmin
 
         private static async Task TestStromSettings()
         {
-            await PlayWrightRunner.Init(Console.Write);
-            await PlayWrightRunner.LogOnStyreWeb();
+            await StyreWebAutomation.Init(Console.Write);
+            await StyreWebAutomation.LogOnStyreWeb();
 
-            await PlayWrightRunner.EndrePlassVerdier("5V16", [("Strøm", "true"), ("Strømboks", "boksen min")]);
+            await StyreWebAutomation.EndrePlassVerdier("5V16", [("Strøm", "true"), ("Strømboks", "boksen min")]);
 
-            await PlayWrightRunner.LogOffStyreWeb();
+            await StyreWebAutomation.LogOffStyreWeb();
         }
 
         private static IEnumerable<(string plassId, int innskudd)> GetManuelleInnskudd()
@@ -98,25 +98,25 @@ namespace SolvikenAdmin
 
         private static async Task KopierInnskuddTilSw(IEnumerable<(string plassId, int innskudd)> gamleInnskudd)
         {
-            await PlayWrightRunner.Init(Console.Write);
-            await PlayWrightRunner.LogOnStyreWeb();
+            await StyreWebAutomation.Init(Console.Write);
+            await StyreWebAutomation.LogOnStyreWeb();
 
             foreach (var plassInnskudd in gamleInnskudd)
             {
-                await PlayWrightRunner.EndrePlassVerdier(plassInnskudd.plassId, [ ("Innskudd", plassInnskudd.innskudd.ToString()) ]);
+                await StyreWebAutomation.EndrePlassVerdier(plassInnskudd.plassId, [ ("Innskudd", plassInnskudd.innskudd.ToString()) ]);
             }
 
-            await PlayWrightRunner.LogOffStyreWeb();
+            await StyreWebAutomation.LogOffStyreWeb();
         }
 
         static async Task DownloadSwReports()
         {
-            await PlayWrightRunner.Init(Console.Write);
-            await PlayWrightRunner.LogOnStyreWeb();
+            await StyreWebAutomation.Init(Console.Write);
+            await StyreWebAutomation.LogOnStyreWeb();
 
-            await PlayWrightRunner.DownLoadReports();
+            await StyreWebAutomation.DownLoadReports();
 
-            await PlayWrightRunner.LogOffStyreWeb();
+            await StyreWebAutomation.LogOffStyreWeb();
         }
     }
 }

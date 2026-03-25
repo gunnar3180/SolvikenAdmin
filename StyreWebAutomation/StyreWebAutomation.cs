@@ -1,9 +1,9 @@
 ﻿using Microsoft.Playwright;
 using System.Reflection.Emit;
 
-namespace StyreWebAutomation
+namespace PlayWrightRunner
 {
-    public static class PlayWrightRunner
+    public static class StyreWebAutomation
     {
         private static IPlaywright _playwright;
         private static IBrowser _browser;
